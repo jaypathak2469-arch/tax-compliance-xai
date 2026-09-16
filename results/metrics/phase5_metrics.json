@@ -1,0 +1,107 @@
+{
+  "phase": 5,
+  "model": "mlp_final_selected.pt",
+  "model_source": "existing Phase 4 checkpoint; no retraining in Phase 5",
+  "target": "Low",
+  "n_test_medium_high": 84,
+  "source_counts": {
+    "Medium": 78,
+    "High": 6
+  },
+  "success_rates": [
+    {
+      "mode": "constrained",
+      "source_risk": "High",
+      "n": 6,
+      "success_rate": 1.0,
+      "valid_rate": 1.0,
+      "mean_l0": 16.0,
+      "mean_l1": 21.11853090922038,
+      "mean_l2": 5.849163810412089,
+      "mean_steps": 70.33333333333333,
+      "mean_runtime_seconds": 0.020721666500624753,
+      "mean_final_objective": 1.1267889241377513
+    },
+    {
+      "mode": "constrained",
+      "source_risk": "Medium",
+      "n": 78,
+      "success_rate": 1.0,
+      "valid_rate": 1.0,
+      "mean_l0": 15.820512820512821,
+      "mean_l1": 7.300881974972212,
+      "mean_l2": 1.9795060830238538,
+      "mean_steps": 18.28205128205128,
+      "mean_runtime_seconds": 0.005384801845978542,
+      "mean_final_objective": 0.7993847731596384
+    },
+    {
+      "mode": "unconstrained",
+      "source_risk": "High",
+      "n": 6,
+      "success_rate": 1.0,
+      "valid_rate": 0.0,
+      "mean_l0": 19.0,
+      "mean_l1": 18.481683095296223,
+      "mean_l2": 3.947424292564392,
+      "mean_steps": 33.666666666666664,
+      "mean_runtime_seconds": 0.004970770833703379,
+      "mean_final_objective": 1.2982401152451832
+    },
+    {
+      "mode": "unconstrained",
+      "source_risk": "Medium",
+      "n": 78,
+      "success_rate": 1.0,
+      "valid_rate": 0.0,
+      "mean_l0": 19.0,
+      "mean_l1": 6.637253067432305,
+      "mean_l2": 1.3712945030285761,
+      "mean_steps": 9.948717948717949,
+      "mean_runtime_seconds": 0.0020604829232046865,
+      "mean_final_objective": 0.9704329398198005
+    },
+    {
+      "mode": "overall",
+      "source_risk": "Medium+High",
+      "n": 168,
+      "success_rate": 1.0,
+      "valid_rate": 0.5,
+      "mean_l0": 17.416666666666668,
+      "mean_l1": 7.88557034127769,
+      "mean_l2": 1.9056069900592167,
+      "mean_steps": 16.821428571428573,
+      "mean_runtime_seconds": 0.004374326404775361,
+      "mean_final_objective": 0.90830926100413
+    }
+  ],
+  "constraint_violation_rate_constrained": 0.0,
+  "negative_tests_all_rejected": true,
+  "objective": "target cross-entropy + 0.01 L1 + 0.01 L2",
+  "optimization_space": "standardized feature space",
+  "constraints": {
+    "immutable": [
+      "age",
+      "previous_default_count",
+      "transaction_count"
+    ],
+    "monotonic_decrease_only": [
+      "outstanding_dues",
+      "late_filing_count",
+      "transaction_anomaly_ratio"
+    ],
+    "bounded": {
+      "deduction_claim_ratio": [
+        0.0,
+        1.0
+      ],
+      "transaction_anomaly_ratio": [
+        0.0,
+        1.0
+      ]
+    },
+    "categorical": "income_sources unchanged",
+    "derived": "transaction_anomaly_count = transaction_anomaly_ratio * transaction_count"
+  },
+  "limitation": "Technical recourse results on synthetic data and a model trained on a synthetic generating process; not evidence of real-world regulatory or compliance effectiveness."
+}

@@ -1,0 +1,94 @@
+{
+  "label": "Reported held-out test results (Phase 3 / Phase 4)",
+  "provenance": {
+    "source": "Tax_Compliance_XAI_Guide_Progress_PPT.pptx",
+    "slides": [7, 9],
+    "transcribed_by": "application build, Phase D",
+    "note": "These values are transcribed verbatim from the project's own progress presentation. Phase 3 and Phase 4 metric files were not present in results/metrics/, and the trained classical model artifacts (logistic_regression.joblib, random_forest.joblib, xgboost.joblib) were not present in models/, so these numbers cannot be recomputed by the application. Nothing here is derived, rounded, rescaled or inferred."
+  },
+  "evaluation": {
+    "split": "held-out test set",
+    "n_records": 742,
+    "class_counts": { "Low": 658, "Medium": 78, "High": 6 },
+    "seed": 42
+  },
+  "phase3": {
+    "title": "Phase 3 — Classical ML comparison",
+    "slide": 7,
+    "columns": ["Accuracy", "Macro F1", "PR-AUC", "High F1"],
+    "models": [
+      {
+        "name": "Logistic Regression",
+        "accuracy": 0.9515,
+        "macro_f1": 0.7347,
+        "pr_auc": 0.7677,
+        "high_f1": 0.435
+      },
+      {
+        "name": "Random Forest",
+        "accuracy": 0.9555,
+        "macro_f1": 0.8307,
+        "pr_auc": 0.8844,
+        "high_f1": 0.714
+      },
+      {
+        "name": "XGBoost",
+        "accuracy": 0.9636,
+        "macro_f1": 0.8649,
+        "pr_auc": 0.9045,
+        "high_f1": 0.769
+      }
+    ],
+    "notes": [
+      "XGBoost provided the strongest held-out classification metrics among the three classical models.",
+      "Repeated stratified 5-fold CV \u00d7 5: XGBoost Macro F1 = 0.880 \u00b1 0.054; High F1 = 0.778 \u00b1 0.148.",
+      "XGBoost was retained as the classical baseline for comparison with the MLP."
+    ]
+  },
+  "phase4": {
+    "title": "Phase 4 — MLP loss comparison",
+    "slide": 9,
+    "architecture": "25 \u2192 64 \u2192 ReLU \u2192 Dropout(0.3) \u2192 32 \u2192 ReLU \u2192 Dropout(0.3) \u2192 3",
+    "training": {
+      "optimizer": "Adam",
+      "learning_rate": 0.001,
+      "weight_decay": 0.0001,
+      "batch_size": 64,
+      "early_stopping": "validation Macro F1, patience 30",
+      "gradient_clipping": "max norm 5"
+    },
+    "columns": ["Test Macro F1", "High F1", "High Precision", "High Recall"],
+    "experiments": [
+      {
+        "name": "Unweighted CE",
+        "selected": false,
+        "macro_f1": 0.8419,
+        "high_f1": 0.667,
+        "high_precision": 1.0,
+        "high_recall": 0.5
+      },
+      {
+        "name": "Weighted CE",
+        "selected": true,
+        "macro_f1": 0.8712,
+        "high_f1": 0.8,
+        "high_precision": 1.0,
+        "high_recall": 0.667
+      },
+      {
+        "name": "Focal \u03b3=2",
+        "selected": false,
+        "macro_f1": 0.8659,
+        "high_f1": 0.8,
+        "high_precision": 1.0,
+        "high_recall": 0.667
+      }
+    ],
+    "notes": [
+      "Selected weighted MLP repeated CV: Macro F1 = 0.877 \u00b1 0.077; High F1 = 0.778 \u00b1 0.206.",
+      "Gradient-flow verification on real standardized test samples: finite and non-zero High-class gradients.",
+      "Weighted CE selected as the final differentiable MLP for counterfactual optimization."
+    ]
+  },
+  "comparison_note": "XGBoost performs strongly among the classical models, while the weighted MLP achieved the highest reported held-out Macro F1 among the evaluated models. The MLP is used for Phase 5 because its differentiability enables gradient-based counterfactual optimization. Only 6 High-risk records exist in the held-out test set, so High-class metrics carry wide uncertainty and no single model should be described as universally best."
+}

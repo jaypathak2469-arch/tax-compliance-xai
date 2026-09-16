@@ -1,0 +1,97 @@
+# Constrained Counterfactual XAI — configuration
+# All values below encode decisions approved at the end of PHASE 1.
+
+seed: 42
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  models_dir: models
+  metrics_dir: results/metrics
+  figures_dir: results/figures
+
+files:
+  tax: synthetic_tax_compliance.csv
+  transactions: financial_transactions_synthetic.csv
+  integrated: integrated_tax_financial_profiles.csv
+  dictionary: data_dictionary.csv
+
+target:
+  name: overall_risk
+  classes: [Low, Medium, High]        # canonical order; encoded Low=0, Medium=1, High=2
+
+# PHASE 1 finding: overall_risk_score = round(0.55*(1-tax_compliance_score)
+#                                            + 0.45*financial_risk_score, 3)   [exact, 100% match]
+# overall_risk is a hard threshold on that score. All four columns below are
+# therefore target-derived and must never be used as predictors.
+leakage_exclusions:
+  - overall_risk_score
+  - financial_risk_score
+  - tax_compliance_score
+  - compliance_risk
+
+# 54 taxpayers have zero transactions. They carry no computed overall_risk_score
+# yet were default-labelled "Low" (one of them has compliance_risk == High).
+# Their labels are unearned and they cannot have transaction features.
+drop_zero_transaction_profiles: true
+
+features:
+  numeric_tax:
+    - age
+    - annual_income
+    - tax_return_filed
+    - late_filing_count
+    - outstanding_dues
+    - previous_default_count
+    - income_growth_rate
+    - deduction_claim_ratio
+  numeric_txn_existing:
+    - transaction_count
+    - total_transaction_value
+    - average_transaction_value
+    - transaction_anomaly_count
+    - transaction_anomaly_ratio
+  numeric_txn_engineered:
+    - avg_anomaly_score
+    - avg_location_risk_score
+    - avg_device_risk_score
+    - avg_transaction_frequency
+    - std_transaction_amount
+    - max_transaction_amount
+  categorical:
+    - income_sources
+
+# transaction_anomaly_ratio = transaction_anomaly_count / transaction_count exactly.
+# Trees are unaffected; linear models are. Phase 3 drops this column for
+# Logistic Regression only, by name, after transformation.
+collinear_drop_for_linear:
+  - transaction_anomaly_count
+
+split:
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  stratify: true
+
+# Constraint definitions verified present in the final feature set (Phase 1 §7).
+constraints:
+  immutable:
+    - age
+    - previous_default_count
+    - transaction_count
+  monotonic_decrease_only:
+    - outstanding_dues
+    - late_filing_count
+    - transaction_anomaly_ratio
+  bounded:
+    deduction_claim_ratio: [0.0, 1.0]
+    transaction_anomaly_ratio: [0.0, 1.0]
+  # transaction_anomaly_count is a derived quantity:
+  #   transaction_anomaly_count = transaction_anomaly_ratio * transaction_count
+  # transaction_count is immutable, so any change to the ratio must be
+  # propagated to the count. Enforced as a projection step in Phase 5.
+  derived:
+    transaction_anomaly_count:
+      formula: transaction_anomaly_ratio * transaction_count
+      driver: transaction_anomaly_ratio
+      fixed: transaction_count

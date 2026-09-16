@@ -1,0 +1,32 @@
+field,dataset,description
+profile_id,Both,Synthetic taxpayer profile identifier; no real identity linkage.
+age,Tax,Synthetic age of taxpayer profile.
+annual_income,Tax,Synthetic annual income in INR.
+income_sources,Tax,Synthetic primary income source category.
+tax_return_filed,Tax,Whether a return is recorded as filed in the synthetic profile (1/0).
+late_filing_count,Tax,Synthetic count of late filings.
+outstanding_dues,Tax,Synthetic outstanding tax dues in INR.
+previous_default_count,Tax,Synthetic count of previous defaults.
+income_growth_rate,Tax,Synthetic year-over-year income growth rate.
+deduction_claim_ratio,Tax,Synthetic deductions as a proportion of annual income.
+tax_compliance_score,Tax,Synthetic compliance score from 0 to 1; higher means better compliance.
+compliance_risk,Tax,Synthetic Low/Medium/High compliance-risk label.
+transaction_id,Financial,Synthetic transaction identifier.
+transaction_amount,Financial,Synthetic transaction value in INR.
+transaction_type,Financial,Synthetic transaction category.
+merchant_category,Financial,Synthetic merchant/category label.
+payment_method,Financial,Synthetic payment channel.
+city,Financial,Synthetic transaction city.
+transaction_frequency,Financial,Synthetic local transaction-frequency indicator.
+location_risk_score,Financial,Synthetic location-risk feature from 0 to 1.
+device_risk_score,Financial,Synthetic device-risk feature from 0 to 1.
+anomaly_score,Financial,Synthetic anomaly score from 0 to 1.
+is_anomaly,Financial,Synthetic anomaly target label (1/0).
+transaction_count,Integrated,Number of synthetic transactions linked to profile.
+total_transaction_value,Integrated,Total linked transaction value in INR.
+average_transaction_value,Integrated,Average linked transaction value in INR.
+transaction_anomaly_count,Integrated,Number of anomalous transactions linked to profile.
+transaction_anomaly_ratio,Integrated,Anomalous transactions divided by total transactions.
+financial_risk_score,Integrated,Synthetic financial-risk score from 0 to 1.
+overall_risk_score,Integrated,Combined synthetic tax and financial risk score.
+overall_risk,Integrated,Combined Low/Medium/High risk label.
