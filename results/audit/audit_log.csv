@@ -1,0 +1,3 @@
+timestamp_utc,event,profile_id,source,model,prediction,details
+2026-09-16T18:36:49+00:00,Risk assessment,TAXP04291,profile,MLP,Medium,"{""record_id"": ""17430c7cf0""}"
+2026-09-16T18:36:49+00:00,Counterfactual generated,TAXP04291,recourse,MLP,,"{""constraint_feasible"": null, ""status"": ""SUCCESS"", ""valid"": null}"

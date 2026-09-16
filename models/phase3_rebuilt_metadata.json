@@ -1,0 +1,43 @@
+{
+  "source": "Phase 2 train_raw.csv + fitted preprocessor.joblib",
+  "classes": [
+    "Low",
+    "Medium",
+    "High"
+  ],
+  "train_rows": 3462,
+  "feature_count_after_preprocessing": 25,
+  "class_counts": {
+    "Low": 3069,
+    "Medium": 367,
+    "High": 26
+  },
+  "xgb_class_weights": {
+    "Low": 0.3760182469859889,
+    "Medium": 3.1444141689373297,
+    "High": 44.38461538461539
+  },
+  "hyperparameters": {
+    "logistic_regression": {
+      "C": 10.0,
+      "class_weight": "balanced",
+      "solver": "lbfgs",
+      "max_iter": 3000
+    },
+    "random_forest": {
+      "n_estimators": 500,
+      "max_depth": 10,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced"
+    },
+    "xgboost": {
+      "n_estimators": 300,
+      "max_depth": 4,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "min_child_weight": 5,
+      "reg_lambda": 2.0
+    }
+  }
+}

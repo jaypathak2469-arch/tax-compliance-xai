@@ -1,12 +1,5 @@
-"""TAX-XAI — Constrained Counterfactual XAI for Tax Compliance and Financial Risk.
+"""TAX-XAI application entry point."""
 
-Entry point. Run from the project root:
-
-    streamlit run app/app.py
-
-This application reads the existing trained model, fitted preprocessor and Phase 5
-results. It never trains, refits or writes to code/, data/, models/ or results/.
-"""
 from __future__ import annotations
 
 import sys
@@ -14,17 +7,27 @@ from pathlib import Path
 
 import streamlit as st
 
-# Make `services`, `ui` and `views` importable regardless of the working directory
-# Streamlit was launched from.
 APP_DIR = Path(__file__).resolve().parent
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from services import artifacts, paths  # noqa: E402
+from services import audit
+
 from ui import components as c  # noqa: E402
-from views import (  # noqa: E402
-    about, analytics, counterfactual, dashboard,
-    model_comparison, profiles, reports, risk_assessment,
+from views import (
+    audit_log,  # noqa: E402
+    about,
+    analytics,
+    batch_assessment,
+    counterfactual,
+    dashboard,
+    data_quality,
+    model_comparison,
+    profiles,
+    reports,
+    risk_assessment,
+    what_if,
 )
 
 st.set_page_config(
@@ -37,11 +40,15 @@ st.set_page_config(
 PAGES = {
     "Overview": dashboard.render,
     "Assess": risk_assessment.render,
+    "Batch Assessment": batch_assessment.render,
+    "Data Quality": data_quality.render,
+    "What-If Simulator": what_if.render,
     "Recourse": counterfactual.render,
     "Profiles": profiles.render,
     "Models": model_comparison.render,
     "Analytics": analytics.render,
     "Reports": reports.render,
+    "Audit Log": audit_log.render,
     "Methodology": about.render,
 }
 
@@ -62,16 +69,8 @@ def sidebar() -> str:
                </div>""",
             unsafe_allow_html=True,
         )
-
         st.markdown('<div class="nav-heading">Navigate</div>', unsafe_allow_html=True)
-        # An explicit key ties this widget to session_state directly, so the
-        # selected page is never ambiguous between the widget's return value
-        # and what session_state holds.
         st.session_state.setdefault(NAV_KEY, "Overview")
-        # A page can ask to switch elsewhere (e.g. Profiles -> Recourse) by
-        # setting NAV_REQUEST_KEY and calling st.rerun(); Streamlit forbids
-        # writing directly to a widget-bound key once that widget exists, so
-        # the request is applied here, before the radio below is created.
         requested = st.session_state.pop(NAV_REQUEST_KEY, None)
         if requested in PAGES:
             st.session_state[NAV_KEY] = requested
@@ -80,7 +79,8 @@ def sidebar() -> str:
         failures = artifacts.blocking_failures()
         if failures:
             state, message = "s-fail", f"{len(failures)} artifact or dependency issue" + (
-                "s" if len(failures) > 1 else "")
+                "s" if len(failures) > 1 else ""
+            )
         else:
             state, message = "s-ok", "All artifacts located"
 
@@ -103,9 +103,7 @@ def sidebar() -> str:
 def main() -> None:
     c.load_css(paths.STYLESHEET)
     st.session_state.setdefault("history", [])
-
     page = sidebar()
-
     failures = artifacts.blocking_failures()
     if failures:
         c.notice(
@@ -114,12 +112,9 @@ def main() -> None:
             kind="stop",
         )
         c.spacer(1.0)
-
     try:
         PAGES[page]()
     except Exception as exc:
-        # A page that fails should say so loudly, not leave the previous
-        # page's content on screen looking like nothing happened.
         st.error(f"The {page} page failed to render.")
         st.exception(exc)
 
