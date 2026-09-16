@@ -1,0 +1,20 @@
+# Application dependencies for TAX-XAI.
+# Install into the same environment that already runs the Phase 5 code.
+#
+#   python -m pip install -r requirements-app.txt
+
+streamlit>=1.51.0
+plotly>=5.22
+pandas>=2.2
+numpy>=1.26
+
+# Existing pipeline dependencies. scikit-learn is pinned to the version the
+# shipped preprocessor.joblib was fitted with; unpickling under a different
+# minor version may warn or fail.
+scikit-learn==1.8.0
+joblib>=1.4
+PyYAML>=6.0
+torch>=2.2
+
+# Optional: PDF export in Phase I. Pure Python, no system libraries needed.
+reportlab>=4.1
