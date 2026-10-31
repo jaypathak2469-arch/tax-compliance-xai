@@ -18,3 +18,4 @@ torch>=2.2
 
 # Optional: PDF export in Phase I. Pure Python, no system libraries needed.
 reportlab>=4.1
+xgboost>=2.0.0
