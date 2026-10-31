@@ -1,3 +1,4 @@
+
 """Interactive what-if risk simulator for TAX-XAI.
 
 The simulator changes raw model inputs and immediately evaluates the existing
@@ -31,7 +32,6 @@ DEFAULT_EDITABLE = [
     "income_growth_rate",
     "deduction_claim_ratio",
     "transaction_anomaly_count",
-    "transaction_anomaly_ratio",
 ]
 
 
@@ -58,33 +58,54 @@ def _risk_badge(risk: str) -> None:
 
 def _probability_table(before: dict, after: dict) -> pd.DataFrame:
     rows = []
+
     for i, risk in enumerate(datasets.CLASSES):
         before_p = float(before["probs"][i])
         after_p = float(after["probs"][i])
+
         rows.append({
             "Risk": risk,
             "Before": before_p,
             "After": after_p,
             "Change": after_p - before_p,
         })
+
     return pd.DataFrame(rows)
 
 
 def _render_probability_bars(before: dict, after: dict) -> None:
     st.markdown("#### Probability movement")
-    data = _probability_table(before, after).set_index("Risk")[["Before", "After"]]
-    st.bar_chart(data, y=["Before", "After"], height=260, use_container_width=True)
+
+    data = _probability_table(before, after).set_index("Risk")[
+        ["Before", "After"]
+    ]
+
+    st.bar_chart(
+        data,
+        y=["Before", "After"],
+        height=260,
+        use_container_width=True,
+    )
 
 
-def _raw_value_input(feature: str, current, minimum, maximum, key: str):
+def _raw_value_input(
+    feature: str,
+    current,
+    minimum,
+    maximum,
+    key: str,
+):
     if feature in INTEGER_FEATURES:
         lo = int(math.floor(minimum))
         hi = int(math.ceil(maximum))
         value = int(round(_safe_float(current)))
+
         lo = min(lo, value)
         hi = max(hi, value)
+
         if lo == hi:
             return value
+
         return st.slider(
             datasets.label(feature),
             min_value=lo,
@@ -104,8 +125,6 @@ def _raw_value_input(feature: str, current, minimum, maximum, key: str):
     if abs(hi - lo) < 1e-12:
         return value
 
-    # Ratios/scores benefit from a small step; financial amounts get a
-    # human-readable step.
     if "ratio" in feature or "score" in feature or "growth" in feature:
         step = 0.01
         value = round(value, 2)
@@ -125,6 +144,7 @@ def _raw_value_input(feature: str, current, minimum, maximum, key: str):
 
 def render() -> None:
     st.markdown("## What-if simulator")
+
     st.caption(
         "Explore how changing model inputs affects the existing live risk "
         "prediction. Values are evaluated by the same fitted preprocessor and "
@@ -132,15 +152,21 @@ def render() -> None:
     )
 
     modelled = datasets.load_modelled_profiles()
+
     if modelled.empty:
         st.error("The modelled profile dataset is unavailable.")
         return
 
     profile_ids = modelled["profile_id"].tolist()
+
     latest = st.session_state.get("latest_assessment") or {}
     latest_id = latest.get("profile_id")
 
-    default_index = profile_ids.index(latest_id) if latest_id in profile_ids else 0
+    default_index = (
+        profile_ids.index(latest_id)
+        if latest_id in profile_ids
+        else 0
+    )
 
     st.markdown("### 1. Select taxpayer")
 
@@ -157,19 +183,26 @@ def render() -> None:
 
     raw_before = {
         feature: stored_row[feature]
-        for feature in datasets.NUMERIC_FEATURES + [datasets.CATEGORICAL_FEATURE]
+        for feature in (
+            datasets.NUMERIC_FEATURES
+            + [datasets.CATEGORICAL_FEATURE]
+        )
     }
 
-    # If the user just assessed a profile manually, use that exact assessment
-    # when it matches the selected profile. Otherwise use persisted profile data.
+    # Preserve a manually assessed input when it matches the selected profile.
     if latest_id == selected_id and latest.get("raw_input"):
         raw_before = dict(latest["raw_input"])
 
     input_issues = validation.validate_input(raw_before)
+
     if input_issues:
-        st.error("Selected profile cannot be simulated because its input is invalid.")
+        st.error(
+            "Selected profile cannot be simulated because its input is invalid."
+        )
+
         for issue in input_issues:
             st.write(f"• {issue}")
+
         return
 
     try:
@@ -179,19 +212,31 @@ def render() -> None:
         return
 
     st.markdown("### 2. Current prediction")
+
     top = st.columns(4)
+
     with top[0]:
         st.metric("Profile", selected_id)
+
     with top[1]:
         st.metric("Current risk", before["pred_class"])
+
     with top[2]:
-        st.metric("Low probability", _format_probability(float(before["probs"][0])))
+        st.metric(
+            "Low probability",
+            _format_probability(float(before["probs"][0])),
+        )
+
     with top[3]:
-        st.metric("Confidence", _format_probability(float(max(before["probs"]))))
+        st.metric(
+            "Confidence",
+            _format_probability(float(max(before["probs"]))),
+        )
 
     _risk_badge(before["pred_class"])
 
     ranges = datasets.feature_ranges()
+
     if ranges.empty:
         st.error("Observed feature ranges are unavailable.")
         return
@@ -199,15 +244,30 @@ def render() -> None:
     range_lookup = ranges.set_index("feature")
 
     editable = [
-        f for f in DEFAULT_EDITABLE
-        if f in datasets.NUMERIC_FEATURES and f in raw_before and f in range_lookup.index
+        feature
+        for feature in DEFAULT_EDITABLE
+        if (
+            feature in datasets.NUMERIC_FEATURES
+            and feature in raw_before
+            and feature in range_lookup.index
+        )
     ]
 
-    with st.expander("Choose additional features to change", expanded=False):
+    with st.expander(
+        "Choose additional features to change",
+        expanded=False,
+    ):
+        # Anomaly ratio is derived automatically and is not independently
+        # editable.
         available = [
-            f for f in datasets.NUMERIC_FEATURES
-            if f in range_lookup.index
+            feature
+            for feature in datasets.NUMERIC_FEATURES
+            if (
+                feature in range_lookup.index
+                and feature != "transaction_anomaly_ratio"
+            )
         ]
+
         selected_features = st.multiselect(
             "Features",
             available,
@@ -217,10 +277,13 @@ def render() -> None:
         )
 
     if not selected_features:
-        st.info("Select at least one feature to create a what-if scenario.")
+        st.info(
+            "Select at least one feature to create a what-if scenario."
+        )
         return
 
     st.markdown("### 3. Build a what-if scenario")
+
     st.caption(
         "Slider limits are the observed minimum/maximum values in the modelled "
         "dataset. They are not regulatory limits or causal feasibility bounds."
@@ -230,27 +293,34 @@ def render() -> None:
 
     groups = {
         "Taxpayer information": [
-            f for f in selected_features
-            if f in datasets.FEATURE_GROUPS["Taxpayer information"]
+            feature
+            for feature in selected_features
+            if feature in datasets.FEATURE_GROUPS["Taxpayer information"]
         ],
         "Compliance information": [
-            f for f in selected_features
-            if f in datasets.FEATURE_GROUPS["Compliance information"]
+            feature
+            for feature in selected_features
+            if feature in datasets.FEATURE_GROUPS["Compliance information"]
         ],
         "Transaction behaviour": [
-            f for f in selected_features
-            if f in datasets.FEATURE_GROUPS["Transaction behaviour"]
+            feature
+            for feature in selected_features
+            if feature in datasets.FEATURE_GROUPS["Transaction behaviour"]
         ],
     }
 
     for group_name, features in groups.items():
         if not features:
             continue
+
         st.markdown(f"#### {group_name}")
+
         cols = st.columns(2)
+
         for index, feature in enumerate(features):
             with cols[index % 2]:
                 stats = range_lookup.loc[feature]
+
                 scenario[feature] = _raw_value_input(
                     feature,
                     raw_before[feature],
@@ -259,13 +329,15 @@ def render() -> None:
                     key=f"what_if_{selected_id}_{feature}",
                 )
 
-    # Categorical feature can be explored too, while staying within the
-    # categories already seen by the fitted encoder.
+    # Categorical feature can be explored using known encoder categories.
     categories = datasets.income_source_categories()
+
     if categories:
         current_source = raw_before.get("income_sources")
+
         if current_source not in categories:
             current_source = categories[0]
+
         scenario["income_sources"] = st.selectbox(
             "Income sources",
             categories,
@@ -273,14 +345,43 @@ def render() -> None:
             key=f"what_if_{selected_id}_income_sources",
         )
 
+    # Automatically calculate the derived anomaly ratio.
+    # The user edits anomaly count, not both dependent values independently.
+    transaction_count = _safe_float(
+        scenario.get("transaction_count")
+    )
+
+    anomaly_count = _safe_float(
+        scenario.get("transaction_anomaly_count")
+    )
+
+    if transaction_count < 0 or anomaly_count < 0:
+        st.error("Transaction counts cannot be negative.")
+        return
+
+    if anomaly_count > transaction_count:
+        st.error(
+            "Anomalous transactions cannot exceed total transactions."
+        )
+        return
+
+    if transaction_count > 0:
+        scenario["transaction_anomaly_ratio"] = (
+            anomaly_count / transaction_count
+        )
+    else:
+        scenario["transaction_anomaly_ratio"] = 0.0
+
     scenario_issues = validation.validate_input(scenario)
 
     st.markdown("### 4. Compare")
 
     if scenario_issues:
         st.error("The what-if scenario failed validation.")
+
         for issue in scenario_issues:
             st.write(f"• {issue}")
+
         return
 
     try:
@@ -290,13 +391,19 @@ def render() -> None:
         return
 
     changed = []
-    for feature in datasets.NUMERIC_FEATURES + [datasets.CATEGORICAL_FEATURE]:
+
+    for feature in (
+        datasets.NUMERIC_FEATURES
+        + [datasets.CATEGORICAL_FEATURE]
+    ):
         before_value = raw_before.get(feature)
         after_value = scenario.get(feature)
+
         try:
             different = float(before_value) != float(after_value)
         except (TypeError, ValueError):
             different = before_value != after_value
+
         if different:
             changed.append({
                 "Feature": datasets.label(feature),
@@ -305,10 +412,12 @@ def render() -> None:
             })
 
     result_cols = st.columns(2)
+
     with result_cols[0]:
         st.markdown("#### Before")
         _risk_badge(before["pred_class"])
         st.metric("Prediction", before["pred_class"])
+
         st.write(
             "Low:", _format_probability(float(before["probs"][0])),
             " · Medium:", _format_probability(float(before["probs"][1])),
@@ -319,6 +428,7 @@ def render() -> None:
         st.markdown("#### After")
         _risk_badge(after["pred_class"])
         st.metric("Prediction", after["pred_class"])
+
         st.write(
             "Low:", _format_probability(float(after["probs"][0])),
             " · Medium:", _format_probability(float(after["probs"][1])),
@@ -334,11 +444,13 @@ def render() -> None:
         )
     else:
         st.info(
-            f"The model prediction remains **{after['pred_class']}** under this scenario."
+            f"The model prediction remains **{after['pred_class']}** "
+            "under this scenario."
         )
 
     if changed:
         st.markdown("#### Changed inputs")
+
         st.dataframe(
             pd.DataFrame(changed),
             use_container_width=True,
@@ -346,13 +458,21 @@ def render() -> None:
         )
 
         table = _probability_table(before, after)
+
         table["Before"] = table["Before"].map(_format_probability)
         table["After"] = table["After"].map(_format_probability)
+
         table["Change"] = table["Change"].map(
-            lambda x: f"{x:+.1%}"
+            lambda value: f"{value:+.1%}"
         )
+
         st.markdown("#### Probability changes")
-        st.dataframe(table, use_container_width=True, hide_index=True)
+
+        st.dataframe(
+            table,
+            use_container_width=True,
+            hide_index=True,
+        )
 
     st.warning(
         "This simulator shows model-level sensitivity to hypothetical input "

@@ -56,6 +56,8 @@ def validate_input(raw: dict) -> list[str]:
 
     if "outstanding_dues" in raw and _is_number(raw.get("outstanding_dues")) and raw["outstanding_dues"] < 0:
         issues.append("Outstanding dues cannot be negative.")
+    if "annual_income" in raw and _is_number(raw.get("annual_income")) and float(raw["annual_income"]) < 0:
+        issues.append("Annual income cannot be negative.")
     if "age" in raw and _is_number(raw.get("age")) and not (0 < raw["age"] < 130):
         issues.append("Age is outside a plausible range.")
     if "deduction_claim_ratio" in raw and _is_number(raw.get("deduction_claim_ratio")):

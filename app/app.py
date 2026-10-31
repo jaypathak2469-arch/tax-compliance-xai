@@ -1,3 +1,4 @@
+
 """TAX-XAI application entry point."""
 
 from __future__ import annotations
@@ -5,18 +6,24 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# Import XGBoost before PyTorch-dependent application services.
+# This addresses the import-order issue identified during diagnostics.
+import xgboost
+
 import streamlit as st
 
 APP_DIR = Path(__file__).resolve().parent
+
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from services import artifacts, paths  # noqa: E402
-from services import audit
+from services import audit  # noqa: E402
 
 from ui import components as c  # noqa: E402
+
 from views import (
-    audit_log,  # noqa: E402
+    audit_log,
     about,
     analytics,
     batch_assessment,
@@ -53,6 +60,7 @@ PAGES = {
 }
 
 BUILD_PHASE = "Phase F — live pipeline"
+
 NAV_KEY = "nav_page"
 NAV_REQUEST_KEY = "nav_page_request"
 
@@ -69,20 +77,37 @@ def sidebar() -> str:
                </div>""",
             unsafe_allow_html=True,
         )
-        st.markdown('<div class="nav-heading">Navigate</div>', unsafe_allow_html=True)
+
+        st.markdown(
+            '<div class="nav-heading">Navigate</div>',
+            unsafe_allow_html=True,
+        )
+
         st.session_state.setdefault(NAV_KEY, "Overview")
+
         requested = st.session_state.pop(NAV_REQUEST_KEY, None)
+
         if requested in PAGES:
             st.session_state[NAV_KEY] = requested
-        st.radio("Navigate", list(PAGES), key=NAV_KEY, label_visibility="collapsed")
+
+        st.radio(
+            "Navigate",
+            list(PAGES),
+            key=NAV_KEY,
+            label_visibility="collapsed",
+        )
 
         failures = artifacts.blocking_failures()
+
         if failures:
-            state, message = "s-fail", f"{len(failures)} artifact or dependency issue" + (
-                "s" if len(failures) > 1 else ""
+            state = "s-fail"
+            message = (
+                f"{len(failures)} artifact or dependency issue"
+                + ("s" if len(failures) > 1 else "")
             )
         else:
-            state, message = "s-ok", "All artifacts located"
+            state = "s-ok"
+            message = "All artifacts located"
 
         st.markdown(
             f"""<div class="sidebar-foot">
@@ -97,21 +122,30 @@ def sidebar() -> str:
                 </div>""",
             unsafe_allow_html=True,
         )
+
     return st.session_state[NAV_KEY]
 
 
 def main() -> None:
     c.load_css(paths.STYLESHEET)
+
     st.session_state.setdefault("history", [])
+
     page = sidebar()
+
     failures = artifacts.blocking_failures()
+
     if failures:
         c.notice(
             "Some artifacts could not be found",
-            " · ".join(f"{f.name}: {f.detail}" for f in failures),
+            " · ".join(
+                f"{failure.name}: {failure.detail}"
+                for failure in failures
+            ),
             kind="stop",
         )
         c.spacer(1.0)
+
     try:
         PAGES[page]()
     except Exception as exc:

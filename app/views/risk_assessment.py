@@ -791,34 +791,14 @@ def _new_client_mode(
 
     c.spacer(0.6)
 
-    validation_result = (
-        validation.validate_input(
-            raw_input
+    validation_errors = validation.validate_input(raw_input)
+
+    if validation_errors:
+        c.notice(
+            "Input validation",
+            "\n".join(str(error) for error in validation_errors),
+            kind="stop",
         )
-    )
-
-    if validation_result:
-
-        if isinstance(
-            validation_result,
-            dict,
-        ):
-
-            errors = validation_result.get(
-                "errors",
-                [],
-            )
-
-            if errors:
-
-                c.notice(
-                    "Input validation",
-                    "\n".join(
-                        str(error)
-                        for error in errors
-                    ),
-                    kind="stop",
-                )
 
     assess = st.button(
         "Assess New Client",
@@ -828,20 +808,11 @@ def _new_client_mode(
     )
 
     if assess:
-
-        if (
-            isinstance(
-                validation_result,
-                dict,
-            )
-            and validation_result.get(
-                "errors"
-            )
-        ):
+        if validation_errors:
+            st.error("Please correct the input errors before assessment.")
             return
 
         try:
-
             with st.spinner(
                 "Running the trained MLP…"
             ):
